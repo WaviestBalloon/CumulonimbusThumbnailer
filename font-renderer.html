@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script>
+      function queryStringToObject() {
+        var queryString = window.location.search;
+        var queryStringObject = {};
+        if (queryString) {
+          queryString = queryString.substring(1);
+          var queryStringArray = queryString.split('&');
+          for (var i = 0; i < queryStringArray.length; i++) {
+            var keyValuePair = queryStringArray[i].split('=');
+            queryStringObject[keyValuePair[0]] = keyValuePair[1];
+          }
+        }
+        return queryStringObject;
+      }
+      function getTextWidth(text, size) {
+        const div = document.createElement('div');
+        div.classList.add('text-width-helper');
+        if (size !== undefined) div.style.fontSize = `${size}px`;
+        div.innerText = text;
+        document.body.appendChild(div);
+        const width = window
+          .getComputedStyle(div, null)
+          .getPropertyValue('width');
+        document.body.removeChild(div);
+        return width;
+      }
+      async function getOptimalFontSize(text, maxWidth, minStep) {
+        const step = typeof minStep === 'number' ? minStep : 1;
+        let finalSize = 0 + step;
+        while (finalSize < 100000) {
+          const width = Number(getTextWidth('Abc', finalSize).slice(0, -2));
+          if (width >= maxWidth) return finalSize - step + 'px';
+          else finalSize += step;
+        }
+        return finalSize + 'px';
+      }
+
+      const queryStringObject = queryStringToObject();
+      const font = queryStringObject.font;
+      const style = document.createElement('style');
+      style.innerHTML = `@font-face {
+          font-family: 'rendered-font';
+          src: url('/var/www-uploads/${font}');
+        }`;
+
+      document.head.appendChild(style);
+      window.onload = async function () {
+        const styleSize = document.createElement('style');
+        styleSize.innerHTML = `:root {
+          --font-size: ${await getOptimalFontSize('Abc', 255, 0.25)};
+        }`;
+        document.head.appendChild(styleSize);
+      };
+    </script>
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      div {
+        width: 256px;
+        height: 256px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        align-content: center;
+        overflow: hidden;
+      }
+      div.text-width-helper {
+        position: absolute;
+        font-size: var(--font-size, 8.172em);
+        font-family: 'rendered-font';
+        top: -9999px;
+        left: -9999px;
+        width: auto;
+        height: auto;
+      }
+      p {
+        font-family: 'rendered-font';
+        margin: 0;
+        padding: 0;
+        font-size: var(--font-size, 8.172em);
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p>Abc</p>
+    </div>
+  </body>
+</html>
